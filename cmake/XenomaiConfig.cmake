@@ -36,18 +36,23 @@ if( UNIX )
       set( Xenomai_INCLUDE_POSIX_DIR ${Xenomai_ROOT_DIR}/include/posix )
     endif()
     
+    # Find xeno-config
+    find_program(Xenomai_XENO_CONFIG NAMES xeno-config  PATHS ${Xenomai_ROOT_DIR}/bin NO_DEFAULT_PATH)
+
+    # get version
+    execute_process(COMMAND ${Xenomai_XENO_CONFIG} --version OUTPUT_VARIABLE Xenomai_VERSION)
+
     # find the xenomai pthread library
     find_library( Xenomai_LIBRARY_NATIVE  native  ${Xenomai_ROOT_DIR}/lib )
     find_library( Xenomai_LIBRARY_XENOMAI xenomai ${Xenomai_ROOT_DIR}/lib )
     find_library( Xenomai_LIBRARY_PTHREAD_RT pthread_rt rtdm ${Xenomai_ROOT_DIR}/lib )
     find_library( Xenomai_LIBRARY_RTDM    rtdm    ${Xenomai_ROOT_DIR}/lib )
-    find_library( Xenomai_LIBRARY_RTDK    rtdk    ${Xenomai_ROOT_DIR}/lib )
+    if("${Xenomai_VERSION}" VERSION_LESS "2.6")
+      find_library( Xenomai_LIBRARY_RTDK    rtdk    ${Xenomai_ROOT_DIR}/lib )
+    endif()
 
     set(Xenomai_LIBRARIES_NATIVE ${Xenomai_LIBRARY_NATIVE} ${Xenomai_LIBRARY_XENOMAI} pthread)
     set(Xenomai_LIBRARIES_POSIX ${Xenomai_LIBRARY_PTHREAD_RT} ${Xenomai_LIBRARY_XENOMAI} pthread rt)
-
-    # Find xeno-config
-    find_program(Xenomai_XENO_CONFIG NAMES xeno-config  PATHS ${Xenomai_ROOT_DIR}/bin NO_DEFAULT_PATH)
 
     # Linker flags for the posix wrappers
     set(Xenomai_LDFLAGS_NATIVE "")#"-lnative -lxenomai -lpthread -lrt")
@@ -69,11 +74,16 @@ endif( UNIX )
 
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(Xenomai DEFAULT_MSG
+set(Xenomai_REQUIRED_VARS 
   Xenomai_ROOT_DIR
   Xenomai_LIBRARY_NATIVE
   Xenomai_LIBRARY_XENOMAI
   Xenomai_LIBRARY_PTHREAD_RT
   Xenomai_LIBRARY_RTDM
-  Xenomai_LIBRARY_RTDK
+  Xenomai_VERSION
   )
+if("${Xenomai_VERSION}" VERSION_LESS "2.6")
+  set(Xenomai_REQUIRED_VARS ${Xenomai_REQUIRED_VARS} Xenomai_LIBRARY_RTDK)
+endif()
+
+find_package_handle_standard_args(Xenomai DEFAULT_MSG ${Xenomai_REQUIRED_VARS})
